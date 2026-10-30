@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="ru" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Change Fit — План похудения</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="min-h-screen flex flex-col">
+  <div id="preloader" aria-hidden="true">
+    <div class="pl-wrap">
+      <svg class="pl-ring" viewBox="0 0 120 120"><circle class="pl-track" cx="60" cy="60" r="52"/><circle class="pl-fill" cx="60" cy="60" r="52"/></svg>
+      <div class="pl-num"><span id="plNum">0</span><small data-i18n="kcal_unit">ккал</small></div>
+    </div>
+    <div class="pl-brand">Change <b>Fit</b></div>
+  </div>
+  <script>if (sessionStorage.getItem('nt_pl')) { var p = document.getElementById('preloader'); if (p) p.remove(); }</script>
+
+
+  <!-- Навигация -->
+  <header class="border-b border-[var(--border-color)] bg-[var(--bg-card)] sticky top-0 z-30">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-4">
+      <a href="index.html" class="flex items-center gap-2 font-extrabold text-xl tracking-tight">
+        <span class="w-9 h-9 rounded-xl bg-emerald-500 text-white flex items-center justify-center">🥗</span>
+        <span>Change <span class="text-emerald-500">Fit</span></span>
+      </a>
+
+      <nav class="flex items-center gap-1 text-sm">
+        <a href="index.html" class="nav-link active" data-i18n="nav_plan">Мой План</a>
+        <a href="dashboard.html" class="nav-link" data-i18n="nav_dash">Дашборд</a>
+        <a href="scanner.html" class="nav-link" data-i18n="nav_scan">AI Сканер Еды</a>
+        <a href="search.html" class="nav-link" data-i18n="nav_search">База Продуктов</a>
+      </nav>
+
+      <div class="flex items-center gap-2">
+        <div id="langMenu" class="lang-menu"></div>
+        <a id="accountChip" href="register.html" class="account-chip"></a>
+        <button onclick="toggleTheme(event)" class="p-2 rounded-xl border border-[var(--border-color)] hover:border-emerald-500" aria-label="Theme"><span class="theme-ico"><span data-icon="sun"></span><span data-icon="moon"></span></span></button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Контент -->
+  <main class="max-w-5xl mx-auto px-4 py-10 flex-1 w-full">
+    <div class="text-center max-w-2xl mx-auto mb-10">
+      <h1 class="text-3xl md:text-4xl font-extrabold mb-3" data-i18n="plan_title">Создайте персональный план похудения</h1>
+      <p class="text-[var(--text-muted)]" data-i18n="plan_sub">Введите свои параметры, желаемый сброс веса и срок для точного расчета дневной нормы КБЖУ</p>
+    </div>
+
+    <div class="grid md:grid-cols-12 gap-8 items-start">
+      <!-- Форма ввода -->
+      <form id="planForm" class="card p-6 md:p-8 md:col-span-7 space-y-5" onsubmit="calculateUserPlan(event)">
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-semibold mb-1.5" data-i18n="lbl_weight">Текущий вес (кг)</label>
+            <input type="number" id="inpWeight" min="35" max="250" step="0.5" required class="input-field text-lg font-bold">
+          </div>
+          <div>
+            <label class="block text-sm font-semibold mb-1.5" data-i18n="lbl_height">Рост (см)</label>
+            <input type="number" id="inpHeight" min="120" max="230" required class="input-field text-lg font-bold">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-semibold mb-1.5" data-i18n="lbl_age">Возраст</label>
+            <input type="number" id="inpAge" min="14" max="90" required class="input-field">
+          </div>
+          <div>
+            <label class="block text-sm font-semibold mb-1.5" data-i18n="lbl_loss">На сколько кг похудеть?</label>
+            <input type="number" id="inpLoss" min="1" max="80" step="0.5" required class="input-field font-bold text-emerald-500">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-semibold mb-1.5" data-i18n="lbl_months">Срок плана (месяцев)</label>
+            <select id="inpMonths" class="input-field font-semibold">
+              <option value="1">1 месяц (30 дней)</option>
+              <option value="2">2 месяца (60 дней)</option>
+              <option value="3">3 месяца (90 дней)</option>
+              <option value="4">4 месяца (120 дней)</option>
+              <option value="6">6 месяцев (180 дней)</option>
+              <option value="12">12 месяцев (1 год)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold mb-1.5" data-i18n="lbl_activity">Уровень активности</label>
+            <select id="inpActivity" class="input-field">
+              <option value="1.2" data-i18n="act_low">Низкий</option>
+              <option value="1.375" data-i18n="act_med">Средний</option>
+              <option value="1.55" data-i18n="act_high">Высокий</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-semibold mb-1.5" data-i18n="lbl_gender">Пол</label>
+          <select id="inpGender" class="input-field font-semibold">
+            <option value="male" data-i18n="gender_m">Мужской</option>
+            <option value="female" data-i18n="gender_f">Женский</option>
+          </select>
+        </div>
+
+        <button type="submit" class="btn-primary w-full text-center text-base mt-4" data-i18n="btn_calc">
+          Рассчитать план и норму
+        </button>
+      </form>
+
+      <!-- Результат расчета -->
+      <div id="resultCard" class="card p-6 md:p-8 md:col-span-5 space-y-6 border-emerald-500/40">
+        <div class="flex items-center justify-between">
+          <h2 class="text-xl font-bold" data-i18n="res_title">Ваш план готов!</h2>
+          <span id="badgeMonths" class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-500">3 мес.</span>
+        </div>
+
+        <div class="p-5 rounded-2xl bg-[var(--bg-main)] text-center">
+          <p class="text-xs uppercase tracking-wider text-[var(--text-muted)] mb-1" data-i18n="res_daily">Дневная норма калорий</p>
+          <div class="text-4xl font-extrabold text-emerald-500"><span id="outKcal">2050</span> <span class="text-lg font-medium" data-i18n="kcal_unit">ккал</span></div>
+          <p class="text-xs text-[var(--text-muted)] mt-2"><span data-i18n="res_deficit">Дефицит в день</span>: <strong id="outDeficit">-255</strong> ккал</p>
+        </div>
+
+        <!-- Норма БЖУ -->
+        <div class="grid grid-cols-3 gap-3 text-center">
+          <div class="p-3 rounded-xl bg-[var(--bg-main)]">
+            <span class="ico-badge" data-icon="dumbbell" style="--c:#3b82f6"></span><div class="text-xs text-[var(--text-muted)]" data-i18n="protein">Белки</div>
+            <div class="text-lg font-extrabold text-blue-500 mt-1"><span id="outP">154</span> г</div>
+          </div>
+          <div class="p-3 rounded-xl bg-[var(--bg-main)]">
+            <span class="ico-badge" data-icon="drop" style="--c:#f59e0b"></span><div class="text-xs text-[var(--text-muted)]" data-i18n="fats">Жиры</div>
+            <div class="text-lg font-extrabold text-amber-500 mt-1"><span id="outF">57</span> г</div>
+          </div>
+          <div class="p-3 rounded-xl bg-[var(--bg-main)]">
+            <span class="ico-badge" data-icon="zap" style="--c:#10b981"></span><div class="text-xs text-[var(--text-muted)]" data-i18n="carbs">Углеводы</div>
+            <div class="text-lg font-extrabold text-emerald-500 mt-1"><span id="outC">230</span> г</div>
+          </div>
+        </div>
+
+        <p id="planWarn" class="hidden text-xs p-3 rounded-xl bg-amber-500/10 text-amber-500 font-semibold"></p>
+
+        <a href="dashboard.html" class="block text-center py-3 rounded-xl font-bold border border-emerald-500 text-emerald-500 hover:bg-emerald-500 hover:text-white" data-i18n="go_dash">
+          Перейти в дневник →
+        </a>
+      </div>
+    </div>
+  </main>
+
+  <script src="app.js"></script>
+  <script>
+    function renderPageSpecific() {
+      const { plan } = getState();
+      document.getElementById('inpWeight').value = plan.weight;
+      document.getElementById('inpHeight').value = plan.height;
+      document.getElementById('inpAge').value = plan.age;
+      document.getElementById('inpLoss').value = plan.lossKg;
+      document.getElementById('inpMonths').value = plan.months;
+      document.getElementById('inpActivity').value = plan.activity;
+      document.getElementById('inpGender').value = plan.gender || 'male';
+
+      animateNumber(document.getElementById('outKcal'), plan.dailyKcal);
+      document.getElementById('outDeficit').textContent = `-${plan.dailyDeficit}`;
+      animateNumber(document.getElementById('outP'), plan.protein);
+      animateNumber(document.getElementById('outF'), plan.fats);
+      animateNumber(document.getElementById('outC'), plan.carbs);
+      document.getElementById('badgeMonths').textContent = `-${plan.lossKg} kg / ${plan.months}m`;
+
+      const warn = document.getElementById('planWarn');
+      const slow = plan.needDays && plan.needDays > plan.months * 30 * 1.02;
+      warn.classList.toggle('hidden', !slow);
+      if (slow) warn.textContent = t('warn_slow').replace('{n}', plan.needDays);
+    }
+
+    function calculateUserPlan(e) {
+      e.preventDefault();
+      const v = id => document.getElementById(id).value;
+      const state = getState();
+      state.plan = calcPlan({
+        weight: parseFloat(v('inpWeight')), height: parseFloat(v('inpHeight')), age: parseInt(v('inpAge')),
+        lossKg: parseFloat(v('inpLoss')), months: parseInt(v('inpMonths')),
+        activity: parseFloat(v('inpActivity')), gender: v('inpGender')
+      });
+      saveState(state);
+      renderPageSpecific();
+      const card = document.getElementById('resultCard');
+      card.classList.remove('pop'); void card.offsetWidth; card.classList.add('pop');
+    }
+  </script>
+</body>
+</html>
